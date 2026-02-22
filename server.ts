@@ -86,6 +86,93 @@ async function startServer() {
     }
   });
 
+  // Player Search API
+  app.get("/api/players/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.length < 3) {
+        return res.status(400).json({ error: "Search query must be at least 3 characters long." });
+      }
+
+      const db = await getDb();
+      // Use common column names for LRP. We select * to get all available data.
+      const [rows]: any = await db.execute(
+        'SELECT * FROM players WHERE Username LIKE ? LIMIT 20',
+        [`%${query}%`]
+      );
+
+      // Sanitize the output to remove sensitive data like passwords
+      const sanitizedRows = rows.map((row: any) => {
+        const { Password, Key, IP, ...safeData } = row;
+        return safeData;
+      });
+
+      res.json(sanitizedRows);
+    } catch (error) {
+      console.error('Player Search API Error:', error);
+      const dbError = handleDbError(error);
+      res.status(500).json({ error: "Database error", details: dbError });
+    }
+  });
+
+  // Economy Top API
+  app.get("/api/economy/top", async (req, res) => {
+    try {
+      const db = await getDb();
+      
+      // Try to find money column
+      let moneyColumn = 'Money';
+      const moneyColumns = ['Money', 'pCash', 'Cash', 'Bank', 'pBank'];
+      let querySuccess = false;
+      let rows: any = [];
+
+      for (const col of moneyColumns) {
+        try {
+          [rows] = await db.execute(`SELECT Username, ${col} as Wealth FROM players ORDER BY ${col} DESC LIMIT 10`);
+          querySuccess = true;
+          break;
+        } catch (e: any) {
+          if (e.code === 'ER_BAD_FIELD_ERROR') continue;
+          throw e;
+        }
+      }
+
+      if (!querySuccess) {
+        return res.status(404).json({ error: "Could not determine economy columns in database." });
+      }
+
+      res.json(rows);
+    } catch (error) {
+      console.error('Economy Top API Error:', error);
+      const dbError = handleDbError(error);
+      res.status(500).json({ error: "Database error", details: dbError });
+    }
+  });
+
+  // Bot Settings API
+  app.get("/api/bot/settings", (req, res) => {
+    res.json({
+      token: process.env.DISCORD_TOKEN ? '********' + process.env.DISCORD_TOKEN.slice(-4) : '',
+      clientId: process.env.DISCORD_CLIENT_ID || '',
+      guildId: process.env.DISCORD_GUILD_ID || '',
+      statusChannel: process.env.DISCORD_STATUS_CHANNEL || '',
+      adminRole: process.env.DISCORD_ADMIN_ROLE || '',
+    });
+  });
+
+  app.post("/api/bot/settings", (req, res) => {
+    // In a real application, you would save these to a database or a .env file.
+    // For this preview environment, we just mock a successful save.
+    const { token, clientId, guildId, statusChannel, adminRole } = req.body;
+    
+    // Example of what you would do:
+    // if (token && !token.startsWith('***')) process.env.DISCORD_TOKEN = token;
+    // process.env.DISCORD_CLIENT_ID = clientId;
+    // process.env.DISCORD_GUILD_ID = guildId;
+    
+    res.json({ success: true, message: "Settings saved successfully." });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

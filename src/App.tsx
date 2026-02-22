@@ -9,7 +9,8 @@ import {
   RefreshCw,
   Clock,
   Database,
-  Terminal
+  Terminal,
+  DollarSign
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -22,6 +23,9 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import PlayerManagement from './components/PlayerManagement';
+import EconomyDashboard from './components/EconomyDashboard';
+import BotSettings from './components/BotSettings';
 
 interface ServerStatus {
   hostname: string;
@@ -44,7 +48,7 @@ export default function App() {
   const [stats, setStats] = useState<DBStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [view, setView] = useState<'overview' | 'admin'>('overview');
+  const [view, setView] = useState<'overview' | 'admin' | 'players' | 'economy' | 'bot-settings'>('overview');
 
   const fetchData = async () => {
     setLoading(true);
@@ -107,11 +111,14 @@ export default function App() {
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 border-r border-white/5 bg-[#0D0D0E] p-6 hidden lg:block">
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Shield className="text-black w-6 h-6" />
-          </div>
+          <img 
+            src="https://cdn.discordapp.com/avatars/1444746274199830649/057c574e89c5a8dd1387aadbef9fd5c4.png?size=1024" 
+            alt="DARKNESS Logo" 
+            className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-emerald-500/20"
+            referrerPolicy="no-referrer"
+          />
           <div>
-            <h1 className="font-bold text-lg tracking-tight">NEXUS</h1>
+            <h1 className="font-bold text-lg tracking-tight">DARKNESS</h1>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">SA-MP Core</p>
           </div>
         </div>
@@ -123,9 +130,25 @@ export default function App() {
             active={view === 'overview'} 
             onClick={() => setView('overview')}
           />
-          <NavItem icon={<Users size={18} />} label="Players" />
+          <NavItem 
+            icon={<Users size={18} />} 
+            label="Players" 
+            active={view === 'players'}
+            onClick={() => setView('players')}
+          />
+          <NavItem 
+            icon={<DollarSign size={18} />} 
+            label="Economy" 
+            active={view === 'economy'}
+            onClick={() => setView('economy')}
+          />
           <NavItem icon={<Database size={18} />} label="Database" />
-          <NavItem icon={<MessageSquare size={18} />} label="Discord Bot" />
+          <NavItem 
+            icon={<MessageSquare size={18} />} 
+            label="Discord Bot" 
+            active={view === 'bot-settings'}
+            onClick={() => setView('bot-settings')}
+          />
           <NavItem 
             icon={<Shield size={18} />} 
             label="Admin Panel" 
@@ -311,7 +334,10 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  <button className="w-full mt-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-sm font-medium transition-all">
+                  <button 
+                    onClick={() => setView('bot-settings')}
+                    className="w-full mt-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-sm font-medium transition-all"
+                  >
                     Configure Bot Settings
                   </button>
                 </div>
@@ -328,7 +354,7 @@ export default function App() {
               </div>
             </div>
           </>
-        ) : (
+        ) : view === 'admin' ? (
           <div className="max-w-4xl mx-auto">
             <header className="flex items-center justify-between mb-10">
               <div>
@@ -350,7 +376,10 @@ export default function App() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">Player Management</h3>
                 <p className="text-zinc-500 text-sm mb-6">Ban, kick, or edit player stats directly from the database.</p>
-                <button className="w-full py-3 bg-emerald-500 text-black rounded-2xl font-bold hover:bg-emerald-400 transition-all">
+                <button 
+                  onClick={() => setView('players')}
+                  className="w-full py-3 bg-emerald-500 text-black rounded-2xl font-bold hover:bg-emerald-400 transition-all"
+                >
                   Open Player List
                 </button>
               </div>
@@ -375,7 +404,7 @@ export default function App() {
                 <div className="w-full bg-black rounded-2xl p-4 font-mono text-xs text-zinc-400 text-left mb-6 h-32 overflow-y-auto border border-white/5">
                   <p>[12:45:01] Server started on port 7003</p>
                   <p>[12:45:05] Loading gamemode: LRP-v2.5</p>
-                  <p>[12:46:12] Player [ID: 0] Nexus_Admin connected</p>
+                  <p>[12:46:12] Player [ID: 0] DARKNESS_Admin connected</p>
                   <p className="animate-pulse">_</p>
                 </div>
                 <button className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all">
@@ -384,7 +413,37 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
+        ) : view === 'players' ? (
+          <div className="max-w-6xl mx-auto">
+            <header className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight mb-1">Player Management</h2>
+                <p className="text-zinc-500 text-sm">Search and manage player accounts directly from the database.</p>
+              </div>
+            </header>
+            <PlayerManagement />
+          </div>
+        ) : view === 'economy' ? (
+          <div className="max-w-6xl mx-auto">
+            <header className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight mb-1">Economy Dashboard</h2>
+                <p className="text-zinc-500 text-sm">Track server wealth and top players.</p>
+              </div>
+            </header>
+            <EconomyDashboard />
+          </div>
+        ) : view === 'bot-settings' ? (
+          <div className="max-w-4xl mx-auto">
+            <header className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight mb-1">Bot Settings</h2>
+                <p className="text-zinc-500 text-sm">Configure your Discord bot integration.</p>
+              </div>
+            </header>
+            <BotSettings />
+          </div>
+        ) : null}
       </main>
     </div>
   );
